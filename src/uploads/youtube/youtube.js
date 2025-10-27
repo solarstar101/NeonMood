@@ -58,11 +58,45 @@ async function createShortVersion(audioPath, imagePath, shortPath) {
   });
 }
 
+async function createShortFromVideo(videoPath, shortPath) {
+  return new Promise((resolve, reject) => {
+    const ffmpeg = spawn("ffmpeg", [
+      "-i",
+      videoPath,
+      "-t",
+      "45", // Clip to 45 seconds
+      "-c:v",
+      "libx264",
+      "-preset",
+      "slow",
+      "-crf",
+      "18",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "256k",
+      "-pix_fmt",
+      "yuv420p",
+      "-vf",
+      "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+      shortPath,
+      "-y",
+    ]);
+
+    ffmpeg.stderr.on("data", (data) => console.error(data.toString()));
+    ffmpeg.on("close", (code) => {
+      if (code === 0) resolve(true);
+      else reject(new Error("Short creation from video failed."));
+    });
+  });
+}
+
 export async function uploadToYouTube(
   slot,
   audioBuffer,
   imageBuffer,
-  metadata
+  metadata,
+  videoBuffer = null
 ) {
   const audioPath = path.resolve(`${slot}.mp3`);
   const imagePath = path.resolve(`${slot}.png`);
@@ -73,50 +107,58 @@ export async function uploadToYouTube(
 
   const durationInSeconds = getAudioDuration(audioPath);
   const isShort = durationInSeconds <= 90;
-  const scale = isShort ? "1080:1920" : "1920:1080";
-  const crf = "18";
 
   const title = isShort ? `${metadata.title} #Shorts` : metadata.title;
   const description = isShort
     ? `${metadata.description}\n\n#Shorts`
     : metadata.description;
 
-  // 2. Convert full video
-  await new Promise((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
-      "-loop",
-      "1",
-      "-i",
-      imagePath,
-      "-i",
-      audioPath,
-      "-c:v",
-      "libx264",
-      "-tune",
-      "stillimage",
-      "-preset",
-      "slow",
-      "-crf",
-      crf,
-      "-c:a",
-      "aac",
-      "-b:a",
-      "256k",
-      "-pix_fmt",
-      "yuv420p",
-      "-shortest",
-      "-vf",
-      `scale=${scale}`,
-      VIDEO_OUTPUT_PATH,
-      "-y",
-    ]);
+  // 2. Use video if provided, otherwise create from image+audio
+  if (videoBuffer) {
+    console.log("🎬 Using generated Veo video");
+    await fs.writeFile(VIDEO_OUTPUT_PATH, videoBuffer);
+  } else {
+    // Fallback to original behavior (image + audio)
+    console.log("📸 Creating video from image + audio");
+    const scale = isShort ? "1080:1920" : "1920:1080";
+    const crf = "18";
 
-    ffmpeg.stderr.on("data", (data) => console.error(data.toString()));
-    ffmpeg.on("close", (code) => {
-      if (code === 0) resolve(true);
-      else reject(new Error(`ffmpeg exited with code ${code}`));
+    await new Promise((resolve, reject) => {
+      const ffmpeg = spawn("ffmpeg", [
+        "-loop",
+        "1",
+        "-i",
+        imagePath,
+        "-i",
+        audioPath,
+        "-c:v",
+        "libx264",
+        "-tune",
+        "stillimage",
+        "-preset",
+        "slow",
+        "-crf",
+        crf,
+        "-c:a",
+        "aac",
+        "-b:a",
+        "256k",
+        "-pix_fmt",
+        "yuv420p",
+        "-shortest",
+        "-vf",
+        `scale=${scale}`,
+        VIDEO_OUTPUT_PATH,
+        "-y",
+      ]);
+
+      ffmpeg.stderr.on("data", (data) => console.error(data.toString()));
+      ffmpeg.on("close", (code) => {
+        if (code === 0) resolve(true);
+        else reject(new Error(`ffmpeg exited with code ${code}`));
+      });
     });
-  });
+  }
 
   // 3. Setup YouTube OAuth2 client
   const oauth2Client = new google.auth.OAuth2(
@@ -165,7 +207,12 @@ export async function uploadToYouTube(
 
   // 6. If long, create and upload a 45-second Short
   if (!isShort) {
-    await createShortVersion(audioPath, imagePath, SHORT_VIDEO_PATH);
+    // Create short version - use video if available, otherwise use image+audio
+    if (videoBuffer) {
+      await createShortFromVideo(VIDEO_OUTPUT_PATH, SHORT_VIDEO_PATH);
+    } else {
+      await createShortVersion(audioPath, imagePath, SHORT_VIDEO_PATH);
+    }
 
     const shortRes = await youtube.videos.insert({
       part: ["snippet", "status"],
