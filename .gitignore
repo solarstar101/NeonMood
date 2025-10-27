@@ -1,2 +1,5 @@
 .env
 node_modules/
+output.mp4
+short_output.mp4
+*.mp4
