@@ -116,7 +116,9 @@ export async function uploadToYouTube(
   // 2. Use video if provided, otherwise create from image+audio
   if (videoBuffer) {
     console.log("🎬 Using generated Veo video");
+    console.log("💾 Writing video buffer to disk...");
     await fs.writeFile(VIDEO_OUTPUT_PATH, videoBuffer);
+    console.log("✅ Video file saved, preparing for upload...");
   } else {
     // Fallback to original behavior (image + audio)
     console.log("📸 Creating video from image + audio");
@@ -161,6 +163,7 @@ export async function uploadToYouTube(
   }
 
   // 3. Setup YouTube OAuth2 client
+  console.log("🔐 Setting up YouTube OAuth2 authentication...");
   const oauth2Client = new google.auth.OAuth2(
     process.env.YT_CLIENT_ID,
     process.env.YT_CLIENT_SECRET,
@@ -171,8 +174,10 @@ export async function uploadToYouTube(
   });
 
   const youtube = google.youtube({ version: "v3", auth: oauth2Client });
+  console.log("✅ Authentication complete, preparing video upload...");
 
   // 4. Upload full video
+  console.log("📤 Starting YouTube video upload (this may take a while)...");
   const res = await youtube.videos.insert({
     part: ["snippet", "status"],
     requestBody: {

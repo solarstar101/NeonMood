@@ -3,3 +3,22 @@ node_modules/
 output.mp4
 short_output.mp4
 *.mp4
+
+# Generated music and image files
+*.mp3
+*.png
+
+# Slot-specific generated files
+morning.mp3
+midday.mp3
+night.mp3
+morning.png
+midday.png
+night.png
+
+# Temporary files from generation
+temp_audio_*.mp3
+temp_veo_video_*.mp4
+temp_audio_for_video.mp3
+temp_cover_for_video.png
+final_video_output.mp4

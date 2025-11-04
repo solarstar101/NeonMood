@@ -12,50 +12,78 @@ const ai = new GoogleGenAI({
 export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
   console.log("🎬 Starting Veo video generation (no image needed)...");
 
-  // Generate a video prompt based on the music prompt
-  // EXTREMELY STRICT still frame with minimal background animation
+  // EXTREMELY STRICT still frame with minimal, loop-safe background animation
   const createVideoPrompt = (musicPrompt, slot) => {
     const isMorning = slot === "morning";
     const isNight = slot === "night";
+    const m = musicPrompt.toLowerCase();
 
-    let animationElements = [];
-    const musicLower = musicPrompt.toLowerCase();
-
-    if (
-      musicLower.includes("rain") ||
-      musicLower.includes("storm") ||
-      musicLower.includes("wet")
-    ) {
-      animationElements.push(
-        "microscopic rain particles barely perceptible in far distance"
+    // Collect MULTIPLE subtle background animations (additive, not else-if)
+    const anim = [];
+    if (/\brain|storm|wet\b/.test(m)) {
+      anim.push("microscopic rain particles in the far background");
+    }
+    if (/\bsnow|winter\b/.test(m)) {
+      anim.push("near-invisible snow dust drifting in deep background");
+    }
+    if (/\btraffic|city|urban\b/.test(m)) {
+      anim.push(
+        "tiny distant bokeh car lights gliding slowly along a horizon line"
       );
-    } else if (musicLower.includes("snow") || musicLower.includes("winter")) {
-      animationElements.push("almost invisible snowflakes in far background");
-    } else if (
-      musicLower.includes("traffic") ||
-      musicLower.includes("city") ||
-      musicLower.includes("urban")
-    ) {
-      animationElements.push("tiny distant light points moving in background");
-    } else if (musicLower.includes("leaves") || musicLower.includes("autumn")) {
-      animationElements.push("minimal leaves barely moving in far background");
-    } else {
-      if (isMorning) {
-        animationElements.push(
-          "incredibly subtle light particles in far distance"
-        );
-      } else if (isNight) {
-        animationElements.push(
-          "barely visible atmospheric particles in deep background"
-        );
-      } else {
-        animationElements.push("very faint light particles in background");
-      }
+    }
+    if (/\blamp|streetlight|neon\b/.test(m)) {
+      anim.push("subtle street-lamp glow breathing periodically (no flicker)");
+    }
+    if (/\bleaves|autumn|fall\b/.test(m)) {
+      anim.push("a few far leaves gently swaying on distant trees");
+    }
+    if (/\bbird|birds|seagull|sparrow\b/.test(m)) {
+      anim.push(
+        "tiny birds crossing at extreme distance on a slow periodic path"
+      );
+    }
+    if (/\bplane|airplane|jet\b/.test(m)) {
+      anim.push(
+        "a faint aircraft light drifting along a long-period arc in the far distance"
+      );
     }
 
-    const animationText = animationElements.join(", ");
+    // Slot-based default if nothing matched
+    if (anim.length === 0) {
+      if (isMorning) anim.push("soft light motes floating in the far distance");
+      else if (isNight)
+        anim.push("barely visible atmospheric dust and very dim city bokeh");
+      else anim.push("very faint ambient particles in the background");
+    }
 
-    return `Create a scene that perfectly matches the mood, theme, and aesthetic of this music: "${musicPrompt}". The visual style should be derived directly from the music's description. CRITICAL: This must be a PERFECTLY STILL FRAME. ZERO camera movement - absolutely no zoom, no pan, no drift, no rotation, no tracking, no movement whatsoever. The camera is completely FROZEN in place. All objects, characters, buildings, elements in the frame must remain STATIC and COMPLETELY MOTIONLESS. NO movement of sun, moon, clouds, vehicles, or ANY foreground or mid-ground elements. The ONLY animation allowed is microscopic atmospheric effects in the extreme far background: ${animationText}. These effects must be so subtle they are barely perceptible - almost like static noise. The scene must loop PERFECTLY with no visible loop point. The first frame and last frame must be IDENTICAL to allow seamless looping. Static composition only. The aesthetic should naturally match the music's theme and mood.`;
+    const animationText = anim.join(", ");
+
+    // Keep wording crisp: HARD (must) vs SOFT (style)
+    return [
+      `HARD CONSTRAINTS:
+- The video MUST loop perfectly: the first and last frame are IDENTICAL for a seamless loop.
+- Absolutely NO camera motion: no pan, tilt, zoom, dolly, handheld, or rack focus.
+- Single continuous shot: no cuts, transitions, titles, logos, text, or black frames.
+- No flicker: disable auto-exposure, auto-white-balance, auto-focus; keep color and grain stable.
+- Motion is minimal, slow, periodic, and returns exactly to the start state at the loop point.
+- Keep motion blur minimal and consistent across frames.`,
+
+      `SOFT INTENT (style):
+- The visual style MUST be anime - any anime aesthetic is acceptable (e.g., Studio Ghibli, Kyoto Animation, Akira-style, Makoto Shinkai, etc.) but it must be clearly anime-style animation.
+- Match the mood of this music: "${musicPrompt}".
+- Background carries motion: ${animationText}, gentle light shifts, floating dust.
+- Foreground is almost static; if any idle movement exists (tiny breathing/sway), it must be loop-safe and extremely subtle.`,
+
+      `LOOP METHOD (choose one and apply cleanly):
+- Exact-Period: all animated parameters are periodic and return to their initial values at the final frame.
+- Mirror/Ping-Pong: animate forward then reverse; ensure zero velocity at the midpoint to avoid a kink.`,
+
+      `SCENE & RENDER GUIDANCE:
+- Render in anime animation style - character designs, backgrounds, and overall aesthetic must be distinctly anime/animation style.
+- Simple, stable composition; minimal parallax and no new occlusions at loop boundaries.
+- Keep particle counts and speeds low; avoid specular pops or sudden highlight spikes near the loop seam.
+- Prioritize distant/background motion so the loop reads as a calm "living still."`,
+    ].join("\n\n");
   };
 
   const prompt = createVideoPrompt(musicPrompt, slot);

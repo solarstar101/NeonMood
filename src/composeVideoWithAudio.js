@@ -25,6 +25,7 @@ export async function composeVideoWithAudio(
     );
 
     return new Promise((resolve, reject) => {
+      console.log("⚙️ Starting ffmpeg encoding process...");
       const ffmpeg = spawn("ffmpeg", [
         "-stream_loop",
         "-1", // Loop video input infinitely
@@ -54,8 +55,31 @@ export async function composeVideoWithAudio(
       ]);
 
       let stderr = "";
+      let lastProgressLog = 0;
       ffmpeg.stderr.on("data", (data) => {
         stderr += data.toString();
+
+        // Parse ffmpeg progress and log periodically
+        const output = data.toString();
+        const timeMatch = output.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+        if (timeMatch) {
+          const totalSeconds =
+            parseInt(timeMatch[1]) * 3600 +
+            parseInt(timeMatch[2]) * 60 +
+            parseInt(timeMatch[3]) +
+            parseFloat(timeMatch[4]) / 100;
+
+          // Log progress every 5 seconds
+          if (totalSeconds - lastProgressLog >= 5) {
+            const progress = ((totalSeconds / audioDuration) * 100).toFixed(1);
+            console.log(
+              `⏳ Encoding progress: ${progress}% (${totalSeconds.toFixed(
+                1
+              )}s / ${audioDuration.toFixed(1)}s)`
+            );
+            lastProgressLog = totalSeconds;
+          }
+        }
       });
 
       ffmpeg.on("close", (code) => {
