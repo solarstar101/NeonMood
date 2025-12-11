@@ -9,7 +9,7 @@ import { buildImagePromptFromMusicPrompt } from "./src/helpers/buildImagePromptF
 import { uploadToPlatforms } from "./src/uploadToPlatforms.js";
 import { generateSlotPrompts } from "./src/generatePromptsWithChatGPT.js";
 import { generateMetadataFromPrompt } from "./src/helpers/generateMetadataFromPrompt.js";
-import { generateVideoWithVeo } from "./src/generateVideoWithVeo.js";
+import { generateVideoWithSora } from "./src/generateVideoWithSora.js";
 import { composeVideoWithAudio } from "./src/composeVideoWithAudio.js";
 import fs from "fs/promises";
 import { execSync } from "child_process";
@@ -101,31 +101,42 @@ if (!slot || !SLOTS[slot]) {
     });
     console.log("✅ Cover image generated");
 
-    // ✅ Step 5: Generate video with Veo
-    let tempVeoVideoPath = null;
+    // ✅ Step 5: Generate scenic loop video with Sora
+    let tempSoraVideoPath = null;
     let videoGenerationSuccess = false;
+    let soraJobInfo = null;
 
     try {
-      console.log("🎬 About to generate video with Veo...");
-      tempVeoVideoPath = `temp_veo_video_${slot}.mp4`;
-      await generateVideoWithVeo(tempVeoVideoPath, slot, musicPromptStr);
-      console.log("✅ Video with Veo completed");
-      videoGenerationSuccess = true;
-    } catch (veoError) {
-      console.warn(
-        "⚠️ Veo video generation failed, will use image-based video instead"
+      console.log("🎬 About to generate video with Sora...");
+      const soraResult = await generateVideoWithSora({
+        slot,
+        musicPrompt: musicPromptStr,
+      });
+
+      tempSoraVideoPath = `temp_sora_video_${slot}.mp4`;
+      await fs.writeFile(tempSoraVideoPath, soraResult.buffer);
+      soraJobInfo = soraResult.job;
+      console.log(
+        `✅ Sora video ready (job=${soraJobInfo?.id ?? "unknown"}, duration=${
+          soraResult.metadata.seconds
+        }s)`
       );
-      console.warn("Error:", veoError.message);
-      tempVeoVideoPath = null;
+      videoGenerationSuccess = true;
+    } catch (soraError) {
+      console.warn(
+        "⚠️ Sora video generation failed, will use image-based video instead"
+      );
+      console.warn("Error:", soraError.message);
+      tempSoraVideoPath = null;
     }
 
     // ✅ Step 6: Compose video (loop) with audio
     let finalVideoBuffer = null;
 
-    if (videoGenerationSuccess && tempVeoVideoPath) {
-      console.log("🎬 About to compose Veo video with audio...");
+    if (videoGenerationSuccess && tempSoraVideoPath) {
+      console.log("🎬 About to compose Sora video with audio...");
       finalVideoBuffer = await composeVideoWithAudio(
-        tempVeoVideoPath,
+        tempSoraVideoPath,
         audioBuffer,
         audioDuration
       );
@@ -136,8 +147,8 @@ if (!slot || !SLOTS[slot]) {
 
     // ✅ Step 7: Clean up temp files
     await fs.unlink(tempAudioPath).catch(() => {});
-    if (tempVeoVideoPath) {
-      await fs.unlink(tempVeoVideoPath).catch(() => {});
+    if (tempSoraVideoPath) {
+      await fs.unlink(tempSoraVideoPath).catch(() => {});
     }
 
     // ✅ Step 8: Upload everything

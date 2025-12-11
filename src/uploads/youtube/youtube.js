@@ -60,11 +60,14 @@ async function createShortVersion(audioPath, imagePath, shortPath) {
 
 async function createShortFromVideo(videoPath, shortPath) {
   return new Promise((resolve, reject) => {
+    console.log("🎯 Creating vertical short from generated video...");
     const ffmpeg = spawn("ffmpeg", [
+      "-stream_loop",
+      "-1",
       "-i",
       videoPath,
       "-t",
-      "45", // Clip to 45 seconds
+      "45",
       "-c:v",
       "libx264",
       "-preset",

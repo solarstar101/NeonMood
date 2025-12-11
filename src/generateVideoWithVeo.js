@@ -12,78 +12,413 @@ const ai = new GoogleGenAI({
 export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
   console.log("🎬 Starting Veo video generation (no image needed)...");
 
-  // EXTREMELY STRICT still frame with minimal, loop-safe background animation
-  const createVideoPrompt = (musicPrompt, slot) => {
+  function extractMoodSummary(musicPrompt) {
+    if (!musicPrompt) return "";
+
+    try {
+      const parsed = JSON.parse(musicPrompt);
+      const parts = [];
+      if (parsed.Title) parts.push(`Title: ${parsed.Title}`);
+      if (parsed.Mood) parts.push(`Mood: ${parsed.Mood}`);
+      if (parsed.Instruments) parts.push(`Instruments: ${parsed.Instruments}`);
+      if (parsed.Structure) parts.push(`Structure: ${parsed.Structure}`);
+      return parts.join(" | ").slice(0, 400);
+    } catch (_) {
+      return musicPrompt.replace(/\s+/g, " ").slice(0, 300);
+    }
+  }
+
+  function adjustTimeOfDayForSlot(text, slot) {
+    // Ensure time-of-day references match the slot
+    const isMorning = slot === "morning";
+    const isMidday = slot === "midday";
+    const isNight = slot === "night";
+
+    if (isMorning) {
+      return text
+        .replace(/at night/gi, "at morning")
+        .replace(/at midday/gi, "at morning")
+        .replace(/at late afternoon/gi, "at early morning")
+        .replace(/at twilight/gi, "at dawn")
+        .replace(/at sunset/gi, "at sunrise")
+        .replace(/at dusk/gi, "at dawn")
+        .replace(/at golden hour/gi, "at golden hour sunrise")
+        .replace(/night /gi, "morning ")
+        .replace(/evening /gi, "morning ");
+    } else if (isMidday) {
+      return text
+        .replace(/at night/gi, "at midday")
+        .replace(/at morning/gi, "at midday")
+        .replace(/at dawn/gi, "at midday")
+        .replace(/at sunrise/gi, "at midday")
+        .replace(/at twilight/gi, "at midday")
+        .replace(/at sunset/gi, "at midday")
+        .replace(/at dusk/gi, "at midday")
+        .replace(/at late afternoon/gi, "at midday")
+        .replace(/at golden hour/gi, "at bright midday")
+        .replace(/night /gi, "midday ")
+        .replace(/morning /gi, "midday ")
+        .replace(/evening /gi, "midday ")
+        .replace(/dawn /gi, "midday ");
+    } else if (isNight) {
+      return text
+        .replace(/at morning/gi, "at night")
+        .replace(/at midday/gi, "at night")
+        .replace(/at dawn/gi, "at night")
+        .replace(/at sunrise/gi, "at night")
+        .replace(/at late afternoon/gi, "at night")
+        .replace(/at golden hour/gi, "at night")
+        .replace(/morning /gi, "night ")
+        .replace(/midday /gi, "night ")
+        .replace(/dawn /gi, "night ")
+        .replace(/bright /gi, "dark ");
+    }
+    return text;
+  }
+
+  function extractSceneElements(musicPrompt, slot) {
     const isMorning = slot === "morning";
     const isNight = slot === "night";
     const m = musicPrompt.toLowerCase();
 
-    // Collect MULTIPLE subtle background animations (additive, not else-if)
-    const anim = [];
-    if (/\brain|storm|wet\b/.test(m)) {
-      anim.push("microscopic rain particles in the far background");
-    }
-    if (/\bsnow|winter\b/.test(m)) {
-      anim.push("near-invisible snow dust drifting in deep background");
-    }
-    if (/\btraffic|city|urban\b/.test(m)) {
-      anim.push(
-        "tiny distant bokeh car lights gliding slowly along a horizon line"
-      );
-    }
-    if (/\blamp|streetlight|neon\b/.test(m)) {
-      anim.push("subtle street-lamp glow breathing periodically (no flicker)");
-    }
-    if (/\bleaves|autumn|fall\b/.test(m)) {
-      anim.push("a few far leaves gently swaying on distant trees");
-    }
-    if (/\bbird|birds|seagull|sparrow\b/.test(m)) {
-      anim.push(
-        "tiny birds crossing at extreme distance on a slow periodic path"
-      );
-    }
-    if (/\bplane|airplane|jet\b/.test(m)) {
-      anim.push(
-        "a faint aircraft light drifting along a long-period arc in the far distance"
-      );
+    let elements = {
+      cinematography: {},
+      subject: "",
+      actions: [],
+      context: "",
+      style: {}
+    };
+
+    // Determine scene type and build elements
+    if (/\btraffic|city|urban|neon|street\b/.test(m)) {
+      if (isNight) {
+        elements.cinematography = {
+          shot: "wide establishing shot, eye level",
+          composition: "fixed vantage point from rooftop",
+          lens: "wide-angle lens",
+          focus: "deep focus, maintaining clarity throughout"
+        };
+        elements.subject = "a lo-fi anime night city skyline";
+        elements.actions = [
+          "neon lights flickering in periodic cycles",
+          "gentle rain falling in continuous loops",
+          "distant clouds drifting in repeating patterns",
+          "steam rising in cyclical waves"
+        ];
+        elements.context = "viewed from a fixed rooftop vantage, no people present";
+        elements.style = {
+          aesthetic: "1980s hand-drawn anime OVA",
+          lighting: "neon and practical lights with cool rim lighting, atmospheric haze",
+          palette: "vibrant neon reflections, deep blues, electric pinks, warm VHS grain",
+          mood: "moody, atmospheric, nostalgic"
+        };
+      } else if (isMorning) {
+        elements.cinematography = {
+          shot: "wide shot, eye level",
+          composition: "stable composition over city terrace",
+          lens: "wide-angle lens",
+          focus: "deep focus"
+        };
+        elements.subject = "an anime sunrise over a calm city terrace";
+        elements.actions = [
+          "morning fog rolling in periodic waves",
+          "hanging lanterns flickering gently in cycles",
+          "leaves swaying in repeating patterns from gentle breeze",
+          "light particles drifting in loops"
+        ];
+        elements.context = "tranquil urban ambience, no people";
+        elements.style = {
+          aesthetic: "1980s anime OVA",
+          lighting: "warm natural key with soft fill, golden hour quality",
+          palette: "warm film grain, amber, peach, cream tones",
+          mood: "tranquil, meditative, peaceful"
+        };
+      } else {
+        elements.cinematography = {
+          shot: "wide establishing shot, eye level",
+          composition: "locked frame of cityscape",
+          lens: "wide-angle lens",
+          focus: "deep focus"
+        };
+        elements.subject = "an anime cityscape at midday";
+        elements.actions = [
+          "city lights in distant buildings pulsing gently in cycles",
+          "gentle breeze moving flags in repeating patterns",
+          "atmospheric particles drifting in loops",
+          "shadows shifting in periodic waves"
+        ];
+        elements.context = "clear daylight urban setting";
+        elements.style = {
+          aesthetic: "1980s anime OVA",
+          lighting: "balanced natural lighting with atmospheric depth",
+          palette: "clear daylight, vibrant urban details, warm grays",
+          mood: "energetic, clear, vibrant"
+        };
+      }
+    } else if (/\bbeach|ocean|sea|coast|shore\b/.test(m)) {
+      elements.cinematography = {
+        shot: "wide shot, eye level",
+        composition: "stable composition of coastal boardwalk",
+        lens: "wide-angle lens",
+        focus: "deep focus"
+      };
+      elements.subject = adjustTimeOfDayForSlot(`an anime coastal boardwalk at ${slot === "morning" ? "golden hour sunrise" : slot === "midday" ? "bright midday" : "night"}`, slot);
+      elements.actions = [
+        "waves rolling in continuous loops",
+        "seabirds gliding in periodic paths",
+        "lantern-lit kiosks flickering gently in cycles",
+        "flags or fabric swaying in repeating patterns from wind",
+        "light reflections dancing in loops"
+      ];
+      elements.context = adjustTimeOfDayForSlot(`coastal setting at ${slot === "morning" ? "golden hour sunrise" : slot === "midday" ? "bright midday" : "night"}`, slot);
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: slot === "morning" ? "warm natural key with soft fill, golden hour sunrise quality" : slot === "midday" ? "bright natural lighting with balanced exposure" : "neon and practical lights with cool rim lighting",
+        palette: slot === "morning" ? "sparkling highlights, warm VHS grain, soft reflections, amber, peach, cream" : slot === "midday" ? "clear daylight tones, vibrant colors, warm grays" : "moody lighting, deep blues, electric accents, warm VHS grain",
+        mood: slot === "morning" ? "serene, warm, nostalgic" : slot === "midday" ? "energetic, clear, vibrant" : "moody, atmospheric, nostalgic"
+      };
+    } else if (/\bmountain|peak|alpine|summit|ridge\b/.test(m)) {
+      elements.cinematography = {
+        shot: "wide establishing shot, eye level",
+        composition: "locked frame of mountain ridge",
+        lens: "wide-angle lens",
+        focus: "deep focus"
+      };
+      elements.subject = "an anime mountain ridge with a wooden teahouse and glowing lanterns";
+      elements.actions = [
+        "cherry blossoms and tall grass swaying in periodic waves",
+        "lanterns flickering gently in cycles",
+        "vapor clouds drifting in repeating patterns",
+        "gentle wind moving foliage in loops"
+      ];
+      elements.context = "serene mountain setting";
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: slot === "morning" ? "warm natural key with soft fill, golden hour sunrise quality" : slot === "midday" ? "bright natural lighting with balanced exposure" : "warm practical lights with cool rim lighting",
+        palette: slot === "morning" ? "warm grain, dreamy colors, sage green, warm amber, cream" : slot === "midday" ? "clear daylight tones, vibrant greens, warm earth tones" : "warm grain, dreamy colors, sage green, deep blues, warm amber",
+        mood: "serene, peaceful, meditative"
+      };
+    } else if (/\bforest|woods|grove|nature\b/.test(m)) {
+      elements.cinematography = {
+        shot: "wide shot, eye level",
+        composition: "stable composition of forest clearing",
+        lens: "wide-angle lens",
+        focus: "deep focus"
+      };
+      elements.subject = adjustTimeOfDayForSlot(`an anime forest clearing at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}`, slot);
+      elements.actions = [
+        slot === "night" ? "fireflies drifting in periodic orbits" : "light particles drifting in periodic orbits",
+        "mist swirling in repeating layers",
+        "foliage swaying in cyclical patterns from gentle wind",
+        "light filtering through leaves in loops"
+      ];
+      elements.context = adjustTimeOfDayForSlot(`forest setting at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}, no human presence`, slot);
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: slot === "morning" ? "warm natural key with soft fill, golden hour sunrise quality" : slot === "midday" ? "bright natural lighting filtering through leaves" : "cool rim lighting from night sky",
+        palette: slot === "morning" ? "luminous highlights, deep emerald tones, moss green, warm amber, cream" : slot === "midday" ? "luminous highlights, deep emerald tones, moss green, forest brown, olive" : "luminous highlights, deep emerald tones, moss green, forest brown, deep blues",
+        mood: slot === "morning" ? "tranquil, ethereal, peaceful" : slot === "midday" ? "energetic, clear, vibrant" : "mysterious, tranquil, ethereal"
+      };
+    } else if (/\brain|storm|wet\b/.test(m)) {
+      elements.cinematography = {
+        shot: "medium-wide shot, eye level",
+        composition: "locked frame of rain-soaked alley",
+        lens: "wide-angle lens",
+        focus: "deep focus"
+      };
+      elements.subject = "an anime rain-soaked alley with neon signage";
+      elements.actions = [
+        "rain falling in continuous loops",
+        "reflections rippling on puddles in periodic patterns",
+        "neon lights flickering gently in cycles",
+        "steam vents pulsing in repeating motions",
+        "hanging signs swaying in loops from wind"
+      ];
+      elements.context = "urban alley setting at night";
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: "neon and practical lights with cool rim lighting",
+        palette: "glossy highlights, moody lighting, cyan, magenta, deep blue, electric pink",
+        mood: "moody, atmospheric, melancholic"
+      };
+    } else if (/\bpark|pond|cherry|lantern|garden|sakura\b/.test(m)) {
+      elements.cinematography = {
+        shot: "wide shot, eye level",
+        composition: "stable composition of park pond",
+        lens: "wide-angle lens",
+        focus: "soft depth of field"
+      };
+      elements.subject = adjustTimeOfDayForSlot(`an anime park pond at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}`, slot);
+      elements.actions = [
+        "cherry blossoms drifting in continuous loops",
+        "water ripples from gentle breezes in periodic patterns",
+        "stone lanterns flickering softly in cycles",
+        "branches swaying in repeating motions",
+        "koi fish creating gentle ripple patterns that loop"
+      ];
+      elements.context = adjustTimeOfDayForSlot(`park setting at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}, no characters present`, slot);
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: slot === "morning" ? "warm natural key with soft fill, golden hour sunrise quality" : slot === "midday" ? "bright natural lighting with balanced exposure" : "warm practical lights with cool rim lighting",
+        palette: slot === "morning" ? "pastel palette, soft pink, lavender, pearl white, mint green, pale blue, warm amber" : slot === "midday" ? "pastel palette, soft pink, lavender, pearl white, mint green, pale blue" : "pastel palette, soft pink, lavender, pearl white, mint green, pale blue, deep blues",
+        mood: "tranquil, peaceful, dreamy"
+      };
+    } else if (/\blake|mist|water|valley|reflection\b/.test(m)) {
+      elements.cinematography = {
+        shot: "wide establishing shot, eye level",
+        composition: "fixed frame of lakeside panorama",
+        lens: "wide-angle lens",
+        focus: "deep focus"
+      };
+      elements.subject = adjustTimeOfDayForSlot(`an anime lakeside panorama at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}`, slot);
+      elements.actions = [
+        "mist rolling in periodic waves",
+        "floating lanterns flickering gently in cycles",
+        "water ripples in repeating patterns",
+        "leaves or reeds swaying in loops from gentle wind",
+        "light reflections dancing continuously"
+      ];
+      elements.context = adjustTimeOfDayForSlot(`lakeside setting at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}, quiet atmospheric motion only`, slot);
+      elements.style = {
+        aesthetic: "1980s anime OVA",
+        lighting: slot === "morning" ? "warm natural key with soft fill, golden hour sunrise quality" : slot === "midday" ? "bright natural lighting with balanced exposure" : "warm practical lights with cool rim lighting",
+        palette: slot === "morning" ? "gentle grain, pearlescent light, amber, peach, soft yellow, cream" : slot === "midday" ? "clear daylight tones, vibrant blues, warm grays, cream" : "gentle grain, pearlescent light, deep blues, soft purples, warm amber",
+        mood: "serene, ethereal, peaceful"
+      };
+    } else {
+      // Default based on slot
+      if (isNight) {
+        elements.cinematography = {
+          shot: "wide establishing shot, eye level",
+          composition: "fixed vantage point from rooftop",
+          lens: "wide-angle lens",
+          focus: "deep focus"
+        };
+        elements.subject = "a lo-fi anime night city skyline";
+        elements.actions = [
+          "neon lights flickering in periodic cycles",
+          "gentle rain falling in continuous loops",
+          "distant clouds drifting in repeating patterns",
+          "steam rising in cyclical waves"
+        ];
+        elements.context = "viewed from a fixed rooftop vantage, no people present";
+        elements.style = {
+          aesthetic: "1980s hand-drawn anime OVA",
+          lighting: "neon and practical lights with cool rim lighting",
+          palette: "vibrant neon reflections, deep blues, electric pinks, warm VHS grain",
+          mood: "moody, atmospheric, nostalgic"
+        };
+      } else if (isMorning) {
+        elements.cinematography = {
+          shot: "wide shot, eye level",
+          composition: "stable composition over city terrace",
+          lens: "wide-angle lens",
+          focus: "deep focus"
+        };
+        elements.subject = "an anime sunrise over a calm city terrace";
+        elements.actions = [
+          "morning fog rolling in periodic waves",
+          "hanging lanterns flickering gently in cycles",
+          "leaves swaying in repeating patterns from gentle breeze",
+          "light particles drifting in loops"
+        ];
+        elements.context = "tranquil urban ambience, no people";
+        elements.style = {
+          aesthetic: "1980s anime OVA",
+          lighting: "warm natural key with soft fill, golden hour quality",
+          palette: "warm film grain, amber, peach, cream tones",
+          mood: "tranquil, meditative, peaceful"
+        };
+      } else {
+        elements.cinematography = {
+          shot: "wide shot, eye level",
+          composition: "stable composition of park pond",
+          lens: "wide-angle lens",
+          focus: "soft depth of field"
+        };
+        elements.subject = adjustTimeOfDayForSlot(`an anime park pond at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}`, slot);
+        elements.actions = [
+          "cherry blossoms drifting in continuous loops",
+          "water ripples from gentle breezes in periodic patterns",
+          "stone lanterns flickering softly in cycles",
+          "branches swaying in repeating motions",
+          "koi fish creating gentle ripple patterns that loop"
+        ];
+        elements.context = adjustTimeOfDayForSlot(`park setting at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}, no characters present`, slot);
+        elements.style = {
+          aesthetic: "1980s anime OVA",
+          lighting: "warm natural key with soft fill",
+          palette: "pastel palette, soft pink, lavender, pearl white, mint green, pale blue",
+          mood: "tranquil, peaceful, dreamy"
+        };
+      }
     }
 
-    // Slot-based default if nothing matched
-    if (anim.length === 0) {
-      if (isMorning) anim.push("soft light motes floating in the far distance");
-      else if (isNight)
-        anim.push("barely visible atmospheric dust and very dim city bokeh");
-      else anim.push("very faint ambient particles in the background");
+    return elements;
+  }
+
+  const createVideoPrompt = (musicPrompt, slot) => {
+    const elements = extractSceneElements(musicPrompt, slot);
+    const moodSummary = extractMoodSummary(musicPrompt);
+
+    // Build prompt following Veo 3.1 guide's five-part formula:
+    // [Cinematography] + [Subject] + [Action] + [Context] + [Style & Ambiance]
+    
+    const promptParts = [];
+
+    // 1. CINEMATOGRAPHY (most powerful tool per guide)
+    promptParts.push(
+      `[Cinematography] ${elements.cinematography.shot}, ${elements.cinematography.composition}. ${elements.cinematography.lens}, ${elements.cinematography.focus}. Camera is completely locked - absolutely no movement: no zoom, pan, tilt, dolly, focus drift, or any camera motion. The camera frame is frozen like a photograph.`
+    );
+
+    // 2. SUBJECT
+    promptParts.push(
+      `[Subject] ${elements.subject}.`
+    );
+
+    // 3. ACTION (specific beats that complete cycles)
+    const actionDescriptions = elements.actions.map((action, index) => {
+      return `- ${action.charAt(0).toUpperCase() + action.slice(1)}, completing exactly one full cycle and returning to starting state`;
+    });
+    promptParts.push(
+      `[Action] Only these subtle, repeating animations are present:`,
+      ...actionDescriptions,
+      `All animations are periodic and cyclic - they complete exactly one full cycle and return to their starting state by the final frame. Use sine waves, circular paths, or oscillating patterns that naturally loop.`
+    );
+
+    // 4. CONTEXT
+    promptParts.push(
+      `[Context] ${elements.context}. Single continuous shot only: no cuts, transitions, titles, logos, text, or black frames.`
+    );
+
+    // 5. STYLE & AMBIANCE
+    promptParts.push(
+      `[Style & Ambiance] ${elements.style.aesthetic} aesthetic. ${elements.style.lighting}. Palette: ${elements.style.palette}. Mood: ${elements.style.mood}. High-fidelity rendering with crisp line work, layered lighting, subtle atmospheric perspective, cinematic quality suitable for production use.`
+    );
+
+    // Add mood context if available
+    if (moodSummary) {
+      promptParts.push(`Atmosphere cues from music: ${moodSummary}`);
     }
 
-    const animationText = anim.join(", ");
+    // CRITICAL LOOP REQUIREMENTS (must be explicit)
+    promptParts.push(
+      "",
+      "CRITICAL LOOP REQUIREMENTS:",
+      "- PERFECT LOOP: First frame and last frame must be visually identical",
+      "- All animated elements must return to their exact starting positions and states",
+      "- Frame matching: camera position, lighting values, colors, particle positions, cloud shapes, water ripple states, leaf positions, lantern glow intensity, reflections, and shadows must match between first and last frames",
+      "- All motion must be periodic and mathematically loopable",
+      "- The scene should feel like a living photograph with subtle, beautiful animations"
+    );
 
-    // Keep wording crisp: HARD (must) vs SOFT (style)
-    return [
-      `HARD CONSTRAINTS:
-- The video MUST loop perfectly: the first and last frame are IDENTICAL for a seamless loop.
-- Absolutely NO camera motion: no pan, tilt, zoom, dolly, handheld, or rack focus.
-- Single continuous shot: no cuts, transitions, titles, logos, text, or black frames.
-- No flicker: disable auto-exposure, auto-white-balance, auto-focus; keep color and grain stable.
-- Motion is minimal, slow, periodic, and returns exactly to the start state at the loop point.
-- Keep motion blur minimal and consistent across frames.`,
+    // Negative prompt (per guide's recommendation)
+    promptParts.push(
+      "",
+      "Negative: No camera movement, no people or characters, no cuts or transitions, no text or logos, no black frames, no non-loopable motion."
+    );
 
-      `SOFT INTENT (style):
-- The visual style MUST be anime - any anime aesthetic is acceptable (e.g., Studio Ghibli, Kyoto Animation, Akira-style, Makoto Shinkai, etc.) but it must be clearly anime-style animation.
-- Match the mood of this music: "${musicPrompt}".
-- Background carries motion: ${animationText}, gentle light shifts, floating dust.
-- Foreground is almost static; if any idle movement exists (tiny breathing/sway), it must be loop-safe and extremely subtle.`,
-
-      `LOOP METHOD (choose one and apply cleanly):
-- Exact-Period: all animated parameters are periodic and return to their initial values at the final frame.
-- Mirror/Ping-Pong: animate forward then reverse; ensure zero velocity at the midpoint to avoid a kink.`,
-
-      `SCENE & RENDER GUIDANCE:
-- Render in anime animation style - character designs, backgrounds, and overall aesthetic must be distinctly anime/animation style.
-- Simple, stable composition; minimal parallax and no new occlusions at loop boundaries.
-- Keep particle counts and speeds low; avoid specular pops or sudden highlight spikes near the loop seam.
-- Prioritize distant/background motion so the loop reads as a calm "living still."`,
-    ].join("\n\n");
+    return promptParts.join("\n");
   };
 
   const prompt = createVideoPrompt(musicPrompt, slot);
