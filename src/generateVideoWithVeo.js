@@ -142,10 +142,10 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
         };
         elements.subject = "an anime cityscape at midday";
         elements.actions = [
-          "city lights in distant buildings pulsing gently in cycles",
-          "gentle breeze moving flags in repeating patterns",
+          "building window lights pulsing gently in cycles",
+          "flags and fabric moving in repeating patterns from gentle breeze",
           "atmospheric particles drifting in loops",
-          "shadows shifting in periodic waves"
+          "subtle shadows from clouds shifting in periodic waves"
         ];
         elements.context = "clear daylight urban setting";
         elements.style = {
@@ -164,11 +164,11 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       };
       elements.subject = adjustTimeOfDayForSlot(`an anime coastal boardwalk at ${slot === "morning" ? "golden hour sunrise" : slot === "midday" ? "bright midday" : "night"}`, slot);
       elements.actions = [
-        "waves rolling in continuous loops",
-        "seabirds gliding in periodic paths",
-        "lantern-lit kiosks flickering gently in cycles",
+        "ocean waves rolling in continuous loops",
+        "water surface reflections moving in periodic cycles",
+        "lantern-lit kiosks and building lights flickering gently in cycles",
         "flags or fabric swaying in repeating patterns from wind",
-        "light reflections dancing in loops"
+        "light reflections on water dancing in loops"
       ];
       elements.context = adjustTimeOfDayForSlot(`coastal setting at ${slot === "morning" ? "golden hour sunrise" : slot === "midday" ? "bright midday" : "night"}`, slot);
       elements.style = {
@@ -187,7 +187,7 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       elements.subject = "an anime mountain ridge with a wooden teahouse and glowing lanterns";
       elements.actions = [
         "cherry blossoms and tall grass swaying in periodic waves",
-        "lanterns flickering gently in cycles",
+        "lanterns and building lights flickering gently in cycles",
         "vapor clouds drifting in repeating patterns",
         "gentle wind moving foliage in loops"
       ];
@@ -207,7 +207,7 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       };
       elements.subject = adjustTimeOfDayForSlot(`an anime forest clearing at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}`, slot);
       elements.actions = [
-        slot === "night" ? "fireflies drifting in periodic orbits" : "light particles drifting in periodic orbits",
+        "light particles drifting in periodic orbits",
         "mist swirling in repeating layers",
         "foliage swaying in cyclical patterns from gentle wind",
         "light filtering through leaves in loops"
@@ -229,8 +229,8 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       elements.subject = "an anime rain-soaked alley with neon signage";
       elements.actions = [
         "rain falling in continuous loops",
-        "reflections rippling on puddles in periodic patterns",
-        "neon lights flickering gently in cycles",
+        "water reflections rippling on puddles in periodic patterns",
+        "neon signs and building lights flickering gently in cycles",
         "steam vents pulsing in repeating motions",
         "hanging signs swaying in loops from wind"
       ];
@@ -251,10 +251,10 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       elements.subject = adjustTimeOfDayForSlot(`an anime park pond at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}`, slot);
       elements.actions = [
         "cherry blossoms drifting in continuous loops",
-        "water ripples from gentle breezes in periodic patterns",
-        "stone lanterns flickering softly in cycles",
+        "water ripples and surface reflections moving in periodic patterns",
+        "stone lanterns and building lights flickering softly in cycles",
         "branches swaying in repeating motions",
-        "koi fish creating gentle ripple patterns that loop"
+        "water surface creating gentle ripple patterns that loop"
       ];
       elements.context = adjustTimeOfDayForSlot(`park setting at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}, no characters present`, slot);
       elements.style = {
@@ -273,10 +273,10 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       elements.subject = adjustTimeOfDayForSlot(`an anime lakeside panorama at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}`, slot);
       elements.actions = [
         "mist rolling in periodic waves",
-        "floating lanterns flickering gently in cycles",
-        "water ripples in repeating patterns",
+        "floating lanterns and ambient lights flickering gently in cycles",
+        "water ripples and surface reflections in repeating patterns",
         "leaves or reeds swaying in loops from gentle wind",
-        "light reflections dancing continuously"
+        "light reflections on water dancing continuously"
       ];
       elements.context = adjustTimeOfDayForSlot(`lakeside setting at ${slot === "morning" ? "dawn" : slot === "midday" ? "midday" : "night"}, quiet atmospheric motion only`, slot);
       elements.style = {
@@ -296,10 +296,10 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
         };
         elements.subject = "a lo-fi anime night city skyline";
         elements.actions = [
-          "neon lights flickering in periodic cycles",
+          "building lights and neon signs flickering in periodic cycles",
           "gentle rain falling in continuous loops",
           "distant clouds drifting in repeating patterns",
-          "steam rising in cyclical waves"
+          "steam rising from vents in cyclical waves"
         ];
         elements.context = "viewed from a fixed rooftop vantage, no people present";
         elements.style = {
@@ -339,10 +339,10 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
         elements.subject = adjustTimeOfDayForSlot(`an anime park pond at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}`, slot);
         elements.actions = [
           "cherry blossoms drifting in continuous loops",
-          "water ripples from gentle breezes in periodic patterns",
-          "stone lanterns flickering softly in cycles",
+          "water ripples and surface reflections moving in periodic patterns",
+          "stone lanterns and ambient lights flickering softly in cycles",
           "branches swaying in repeating motions",
-          "koi fish creating gentle ripple patterns that loop"
+          "water surface creating gentle ripple patterns that loop"
         ];
         elements.context = adjustTimeOfDayForSlot(`park setting at ${slot === "morning" ? "early morning" : slot === "midday" ? "midday" : "night"}, no characters present`, slot);
         elements.style = {
@@ -368,7 +368,8 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
 
     // 1. CINEMATOGRAPHY (most powerful tool per guide)
     promptParts.push(
-      `[Cinematography] ${elements.cinematography.shot}, ${elements.cinematography.composition}. ${elements.cinematography.lens}, ${elements.cinematography.focus}. Camera is completely locked - absolutely no movement: no zoom, pan, tilt, dolly, focus drift, or any camera motion. The camera frame is frozen like a photograph.`
+      `[Cinematography] ${elements.cinematography.shot}, ${elements.cinematography.composition}. ${elements.cinematography.lens}, ${elements.cinematography.focus}.`,
+      `Camera movement: ZERO - ABSOLUTELY FORBIDDEN. The camera is completely frozen, locked, and static - like a tripod-mounted photograph. NO camera movement of ANY kind: no zoom, no pan, no tilt, no dolly, no tracking, no rotation, no focus drift, no stabilization drift, no parallax, no camera shake, no handheld movement. Camera position, angle, framing, and focus remain 100% static throughout the entire video. The camera frame is frozen in place from first frame to last frame.`
     );
 
     // 2. SUBJECT
@@ -376,14 +377,32 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       `[Subject] ${elements.subject}.`
     );
 
-    // 3. ACTION (specific beats that complete cycles)
+    // 3. ACTION (specific beats that complete cycles - ONLY minimal loop-friendly animations)
     const actionDescriptions = elements.actions.map((action, index) => {
       return `- ${action.charAt(0).toUpperCase() + action.slice(1)}, completing exactly one full cycle and returning to starting state`;
     });
     promptParts.push(
-      `[Action] Only these subtle, repeating animations are present:`,
+      `[Action] ONLY environmental effects are present (NO moving objects):`,
       ...actionDescriptions,
-      `All animations are periodic and cyclic - they complete exactly one full cycle and return to their starting state by the final frame. Use sine waves, circular paths, or oscillating patterns that naturally loop.`
+      "",
+      "ALLOWED - Environmental effects only (these can loop perfectly):",
+      "- Weather effects: rain falling in periodic loops, snow drifting in continuous loops",
+      "- Wind effects: leaves, grass, fabric, flags, branches swaying in repeating patterns",
+      "- Lighting effects: neon signs, streetlights, window lights, building lights flickering or pulsing in periodic cycles",
+      "- Water effects: ripples, waves, pond surfaces, water reflections moving in continuous loops (NO fountains with jets - only surface effects)",
+      "- Atmospheric effects: fog/mist rolling in periodic waves, steam/smoke rising in cyclical waves",
+      "- Particle effects: dust, light particles drifting in closed circular paths (NO fireflies - they move too randomly)",
+      "- Gentle swaying: plants, decorations, or hanging elements moving in cyclical patterns",
+      "",
+      "FORBIDDEN - NO moving objects (these cannot loop perfectly):",
+      "- NO trains, vehicles, cars, buses, or any moving transportation",
+      "- NO animals, birds, or any living creatures",
+      "- NO people or characters",
+      "- NO boats, planes, or flying objects",
+      "- NO complex moving machinery or mechanical objects",
+      "- ONLY environmental effects that repeat in perfect cycles",
+      "",
+      "ALL animations must be periodic and cyclic - completing exactly one full cycle by the final frame and returning to starting states. Use sine waves, circular paths, or oscillating patterns that naturally loop."
     );
 
     // 4. CONTEXT
@@ -401,21 +420,35 @@ export async function generateVideoWithVeo(outputPath, slot, musicPrompt) {
       promptParts.push(`Atmosphere cues from music: ${moodSummary}`);
     }
 
-    // CRITICAL LOOP REQUIREMENTS (must be explicit)
+    // CRITICAL REQUIREMENTS (must be explicit)
     promptParts.push(
       "",
-      "CRITICAL LOOP REQUIREMENTS:",
-      "- PERFECT LOOP: First frame and last frame must be visually identical",
+      "CRITICAL REQUIREMENTS - READ CAREFULLY:",
+      "",
+      "CAMERA MOVEMENT: ZERO - ABSOLUTELY FORBIDDEN",
+      "- The camera is completely frozen, locked, and static - like a photograph on a tripod",
+      "- NO camera movement of ANY kind: no zoom, no pan, no tilt, no dolly, no tracking, no rotation, no focus drift, no stabilization drift, no parallax, no camera shake, no handheld movement, no movement whatsoever",
+      "- Camera position, angle, framing, and focus remain 100% static throughout the entire video",
+      "- The camera frame is frozen in place from first frame to last frame",
+      "",
+      "PERFECT LOOP REQUIREMENTS:",
+      "- First frame and last frame must be visually identical",
       "- All animated elements must return to their exact starting positions and states",
-      "- Frame matching: camera position, lighting values, colors, particle positions, cloud shapes, water ripple states, leaf positions, lantern glow intensity, reflections, and shadows must match between first and last frames",
-      "- All motion must be periodic and mathematically loopable",
-      "- The scene should feel like a living photograph with subtle, beautiful animations"
+      "- Frame matching: camera position (static), lighting values, colors, particle positions, cloud shapes, water ripple states, leaf positions, lantern glow intensity, reflections, and shadows must match between first and last frames",
+      "- All animations must be periodic and cyclic, completing exactly one full cycle",
+      "- Motion must be mathematically loopable using sine waves, circular paths, or oscillating patterns",
+      "- Single continuous shot only: no cuts, transitions, titles, logos, text, or black frames",
+      "",
+      "ANIMATION RESTRICTIONS - ENVIRONMENTAL EFFECTS ONLY:",
+      "- ONLY environmental effects are allowed: weather (rain, snow), wind effects (leaves, fabric, flags swaying), lighting effects (neon signs, building lights flickering/pulsing), water surface effects (ripples, waves), atmospheric effects (fog, mist, steam), particle effects (dust, light particles), gentle plant/decorative swaying",
+      "- FORBIDDEN: NO trains, vehicles, cars, buses, or any moving transportation. NO animals, birds, or living creatures. NO people or characters. NO boats, planes, or flying objects. NO complex moving machinery. NO moving objects of any kind - they cannot loop perfectly.",
+      "- The scene should feel like a living photograph with minimal environmental animations only"
     );
 
     // Negative prompt (per guide's recommendation)
     promptParts.push(
       "",
-      "Negative: No camera movement, no people or characters, no cuts or transitions, no text or logos, no black frames, no non-loopable motion."
+      "Negative: NO camera movement of any kind, NO people or characters, NO cuts or transitions, NO text or logos, NO black frames, NO non-loopable motion, NO trains, NO vehicles, NO cars, NO buses, NO moving transportation, NO animals, NO birds, NO living creatures, NO boats, NO planes, NO flying objects, NO moving objects of any kind, NO complex moving machinery, NO complex animations, NO large-scale movement, NO camera shake, NO parallax, NO tracking shots. ONLY environmental effects are allowed."
     );
 
     return promptParts.join("\n");

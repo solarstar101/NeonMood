@@ -67,14 +67,14 @@ const SCENE_TEMPLATES = [
     keywords: ["beach", "ocean", "coast", "shore", "waves", "sea", "harbor"],
     slotAffinity: ["midday", "afternoon"],
     description:
-      "Still frame anime coastal boardwalk at golden hour. The camera is completely still - locked like a photograph. Only subtle, repeating animations: waves rolling in continuous loops, seabirds gliding in periodic paths, lantern-lit kiosks flickering gently in cycles, flags or fabric swaying in repeating patterns from wind, and light reflections dancing in loops. Style: 1980s anime OVA with sparkling highlights, warm VHS grain, and soft reflections.",
+      "Still frame anime coastal boardwalk at golden hour. The camera is completely still - locked like a photograph. Only subtle, repeating animations: waves rolling in continuous loops, lantern-lit kiosks flickering gently in cycles, flags or fabric swaying in repeating patterns from wind, and light reflections dancing in loops. Style: 1980s anime OVA with sparkling highlights, warm VHS grain, and soft reflections.",
   },
   {
     id: "forest_fireflies",
     keywords: ["forest", "woods", "grove", "fireflies", "nature", "glade"],
     slotAffinity: ["night", "morning"],
     description:
-      "Still frame anime forest clearing at twilight. The camera is completely fixed - no movement whatsoever. Only subtle, repeating animations: fireflies drifting in periodic orbits, mist swirling in repeating layers, foliage swaying in cyclical patterns from gentle wind, and light filtering through leaves in loops. No human presence. Style: 1980s anime OVA with luminous highlights and deep emerald tones.",
+      "Still frame anime forest clearing at twilight. The camera is completely fixed - no movement whatsoever. Only subtle, repeating animations: light particles drifting in periodic orbits, mist swirling in repeating layers, foliage swaying in cyclical patterns from gentle wind, and light filtering through leaves in loops. No human presence. Style: 1980s anime OVA with luminous highlights and deep emerald tones.",
   },
   {
     id: "rainy_alley",
@@ -314,52 +314,91 @@ function buildSoraPrompt(musicPrompt, slot) {
   promptParts.push(
     "Cinematography:",
     `Camera shot: ${cameraFraming}`,
+    "Camera movement: ZERO camera movement. The camera is completely frozen and locked in place - like a tripod-mounted photograph. Absolutely NO movement of any kind: no zoom, no pan, no tilt, no dolly, no tracking, no rotation, no focus drift, no stabilization drift, no parallax, no camera shake, no handheld movement. The camera position, angle, and framing remain 100% static throughout the entire video.",
     "Depth of field: Deep focus (foreground and background both sharp, maintaining clarity throughout)",
     `Lighting: ${sceneDesc.includes("night") ? "Neon and practical lights with cool rim lighting" : sceneDesc.includes("sunrise") || sceneDesc.includes("dawn") ? "Warm natural key with soft fill, golden hour quality" : "Balanced natural lighting with atmospheric depth"}`,
     `Palette anchors: ${colorPalette.join(", ")}`,
-    "Mood: Tranquil, meditative, a living still photograph with subtle motion"
+    "Mood: Tranquil, meditative, a living still photograph with minimal subtle motion"
   );
 
-  // Actions section - specific beats for animations
+  // Actions section - specific beats for loop-friendly animations
+  // These are the ONLY types of animations allowed - all must be periodic and loopable
   const actions = [];
   if (sceneDesc.includes("rain")) {
-    actions.push("- Rain falls in continuous, periodic loops, completing exactly one cycle");
+    actions.push("- Rain: falling in continuous, periodic loops, completing exactly one cycle");
   }
-  if (sceneDesc.includes("flickering") || sceneDesc.includes("neon") || sceneDesc.includes("lantern")) {
-    actions.push("- Lights pulse in smooth periodic cycles, returning to starting brightness");
+  if (sceneDesc.includes("snow") || sceneDesc.includes("winter")) {
+    actions.push("- Snow: drifting in continuous loops, returning to starting positions");
+  }
+  if (sceneDesc.includes("flickering") || sceneDesc.includes("neon") || sceneDesc.includes("lantern") || sceneDesc.includes("light")) {
+    actions.push("- Building lights: flickering or pulsing in smooth periodic cycles, returning to starting brightness");
   }
   if (sceneDesc.includes("clouds") || sceneDesc.includes("mist") || sceneDesc.includes("fog")) {
-    actions.push("- Atmospheric elements drift in repeating patterns, completing full cycles");
+    actions.push("- Atmospheric elements: mist, fog, or clouds drifting in repeating patterns, completing full cycles");
   }
-  if (sceneDesc.includes("swaying") || sceneDesc.includes("leaves") || sceneDesc.includes("branches")) {
-    actions.push("- Foliage sways in gentle oscillating motions, returning to starting positions");
+  if (sceneDesc.includes("swaying") || sceneDesc.includes("leaves") || sceneDesc.includes("branches") || sceneDesc.includes("wind")) {
+    actions.push("- Wind effects: leaves, grass, fabric, flags, or branches swaying in gentle oscillating motions, returning to starting positions");
   }
-  if (sceneDesc.includes("ripples") || sceneDesc.includes("water") || sceneDesc.includes("waves")) {
-    actions.push("- Water elements move in continuous loops, matching first and last frame states");
+  if (sceneDesc.includes("ripples") || sceneDesc.includes("water") || sceneDesc.includes("waves") || sceneDesc.includes("pond")) {
+    actions.push("- Water surface effects: ripples and waves moving in continuous loops, matching first and last frame states");
   }
-  if (sceneDesc.includes("particles") || sceneDesc.includes("fireflies") || sceneDesc.includes("dust")) {
-    actions.push("- Particles drift in closed circular paths, returning to starting positions");
+  if (sceneDesc.includes("particles") || sceneDesc.includes("dust")) {
+    actions.push("- Particle effects: dust or light particles drifting in closed circular paths, returning to starting positions");
+  }
+  if (sceneDesc.includes("steam") || sceneDesc.includes("smoke")) {
+    actions.push("- Steam or smoke: rising in cyclical waves, completing periodic patterns");
   }
   
-  // Default action if none specified
-  if (actions.length === 0) {
-    actions.push("- Subtle atmospheric motion completes one full cycle, returning all elements to starting states");
+  // Always include a note about minimal animations
+  promptParts.push("Actions - ONLY environmental effects are allowed (NO moving objects):");
+  if (actions.length > 0) {
+    actions.forEach(action => promptParts.push(action));
+  } else {
+    promptParts.push("- Subtle environmental effects: gentle particles or light shifts completing one full cycle, returning all elements to starting states");
   }
-
-  promptParts.push("Actions:");
-  actions.forEach(action => promptParts.push(action));
+  promptParts.push("");
+  promptParts.push("ALLOWED - Environmental effects only (these can loop perfectly):");
+  promptParts.push("- Weather effects: rain falling in periodic loops, snow drifting in continuous loops");
+  promptParts.push("- Wind effects: leaves, grass, fabric, flags, branches swaying in repeating patterns");
+  promptParts.push("- Lighting effects: neon signs, streetlights, window lights, building lights flickering or pulsing in periodic cycles");
+  promptParts.push("- Water effects: ripples, waves, pond surfaces, water reflections moving in continuous loops (NO fountains with jets - only surface effects)");
+  promptParts.push("- Atmospheric effects: fog/mist rolling in periodic waves, steam/smoke rising in cyclical waves");
+  promptParts.push("- Particle effects: dust, light particles drifting in closed circular paths (NO fireflies - they move too randomly)");
+  promptParts.push("- Gentle swaying: plants, decorations, or hanging elements moving in cyclical patterns");
+  promptParts.push("");
+  promptParts.push("FORBIDDEN - NO moving objects (these cannot loop perfectly):");
+  promptParts.push("- NO trains, vehicles, cars, buses, or any moving transportation");
+  promptParts.push("- NO animals, birds, or any living creatures");
+  promptParts.push("- NO people or characters");
+  promptParts.push("- NO boats, planes, or flying objects");
+  promptParts.push("- NO complex moving machinery or mechanical objects");
+  promptParts.push("- ONLY environmental effects that repeat in perfect cycles");
+  promptParts.push("");
+  promptParts.push("ALL animations must be periodic and cyclic - completing exactly one full cycle by the final frame and returning to starting states.");
 
   // Critical loop requirements (must be clear and explicit)
   promptParts.push(
     "",
-    "CRITICAL LOOP REQUIREMENTS:",
-    "- PERFECT LOOP: First frame and last frame must be visually identical",
+    "CRITICAL REQUIREMENTS - READ CAREFULLY:",
+    "",
+    "CAMERA MOVEMENT: ZERO - ABSOLUTELY FORBIDDEN",
+    "- The camera is completely frozen, locked, and static - like a photograph on a tripod",
+    "- NO camera movement of ANY kind: no zoom, no pan, no tilt, no dolly, no tracking, no rotation, no focus drift, no stabilization drift, no parallax, no camera shake, no handheld movement, no movement whatsoever",
+    "- Camera position, angle, framing, and focus remain 100% static throughout the entire video",
+    "- The camera frame is frozen in place from first frame to last frame",
+    "",
+    "PERFECT LOOP REQUIREMENTS:",
+    "- First frame and last frame must be visually identical",
     "- All animated elements must return to their exact starting positions and states",
-    "- Camera is completely locked - absolutely no movement: no zoom, pan, tilt, dolly, focus drift",
+    "- Frame matching: camera position (static), lighting values, colors, particle positions, cloud shapes, water ripple states, leaf positions, lantern glow intensity, reflections, and shadows must match between first and last frames",
     "- All animations must be periodic and cyclic, completing exactly one full cycle",
-    "- Frame matching: camera position, lighting values, colors, particle positions, cloud shapes, water ripple states, leaf positions, lantern glow intensity, reflections, and shadows must match between first and last frames",
+    "- Motion must be mathematically loopable using sine waves, circular paths, or oscillating patterns",
     "- Single continuous shot only: no cuts, transitions, titles, logos, text, or black frames",
-    "- Motion must be mathematically loopable using sine waves, circular paths, or oscillating patterns"
+    "",
+    "ANIMATION RESTRICTIONS - ENVIRONMENTAL EFFECTS ONLY:",
+    "- ONLY environmental effects are allowed: weather (rain, snow), wind effects (leaves, fabric, flags swaying), lighting effects (neon signs, building lights flickering/pulsing), water surface effects (ripples, waves), atmospheric effects (fog, mist, steam), particle effects (dust, light particles), gentle plant/decorative swaying",
+    "- FORBIDDEN: NO trains, vehicles, cars, buses, or any moving transportation. NO animals, birds, or living creatures. NO people or characters. NO boats, planes, or flying objects. NO complex moving machinery. NO moving objects of any kind - they cannot loop perfectly.",
+    "- The scene should feel like a living photograph with minimal environmental animations only"
   );
 
   // Technical and rendering notes
@@ -368,7 +407,8 @@ function buildSoraPrompt(musicPrompt, slot) {
     "Technical:",
     "- High-fidelity rendering with crisp line work and layered lighting",
     "- Subtle atmospheric perspective and cinematic quality",
-    "- Provide visuals only; accompanying audio from render will be discarded"
+    "- Provide visuals only; accompanying audio from render will be discarded",
+    "- Remember: ONLY environmental effects - NO trains, vehicles, moving objects, or anything that cannot loop perfectly"
   );
 
   return promptParts.join("\n");
